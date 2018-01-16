@@ -10,10 +10,10 @@ oc new-project prod --display-name="Shopping - Prod"
 
 oc login -u system:admin
 oc policy add-role-to-user admin system:serviceaccount:cicd:default
-oadm policy add-role-to-user cluster-admin developer
-oadm policy add-role-to-user admin developer -n cicd
-oadm policy add-role-to-user admin developer -n stage
-oadm policy add-role-to-user admin developer -n prod
+oc adm policy add-role-to-user cluster-admin developer
+oc adm policy add-role-to-user admin developer -n cicd
+oc adm policy add-role-to-user admin developer -n stage
+oc adm policy add-role-to-user admin developer -n prod
 
 # CI/CD creation steps
 oc login -u developer
