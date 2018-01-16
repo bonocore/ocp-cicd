@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Should not be needed
-#oc policy add-role-to-user admin system:serviceaccount:cicd:default
+oc policy add-role-to-user admin system:serviceaccount:cicd:default
 
 # CI/CD creation steps
 oc new-project cicd --display-name="CI/CD"
