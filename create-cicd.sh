@@ -1,10 +1,22 @@
 #!/bin/bash
 
-#Should not be needed
-#oc policy add-role-to-user admin system:serviceaccount:cicd:default
+# create project
+oc login -u developer
+oc new-project cicd --display-name="CI/CD"
+oc new-project stage --display-name="Shopping - Stage"
+oc new-project prod --display-name="Shopping - Prod"
+
+# permissions 
+
+oc login -u system:admin
+oc policy add-role-to-user admin system:serviceaccount:cicd:default
+oc adm policy add-role-to-user cluster-admin developer
+oc adm policy add-role-to-user admin developer -n cicd
+oc adm policy add-role-to-user admin developer -n stage
+oc adm policy add-role-to-user admin developer -n prod
 
 # CI/CD creation steps
-oc new-project cicd --display-name="CI/CD"
+oc login -u developer
 oc new-app -f http://bit.ly/openshift-gogs-persistent-template --param=HOSTNAME=gogs-cicd.cloud.redhat.int -n cicd
 oc new-app jenkins-ephemeral -l app=jenkins -p MEMORY_LIMIT=1Gi -n cicd
 oc create -f ./pipelines.yaml  -n cicd
@@ -12,11 +24,10 @@ oc create -f  https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexu
 oc new-app nexus2-persistent -n cicd
 
 # Stage Project creation steps
-oc new-project stage --display-name="Shopping - Stage"
 oc policy add-role-to-user edit system:serviceaccount:cicd:jenkins -n stage
 
 # Prod Project creation steps
-oc new-project prod --display-name="Shopping - Prod"
+
 oc policy add-role-to-user edit system:serviceaccount:cicd:jenkins -n prod
 oc create -f ./shopping-bluegreen.yaml  -n prod
 oc new-app shopping-bluegreen -l app=shopping -n prod
