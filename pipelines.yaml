@@ -41,7 +41,7 @@ spec:
             // clean up. keep the image stream
             sh "oc project stage"
             sh "oc delete bc,dc,svc,route -l app=shopping -n stage"
-            sh "oc tag openshift/jboss-eap70-openshift:1.6 jboss-eap70-openshift:latest"
+            sh "oc tag openshift/jboss-eap70-openshift:1.6 openshift/jboss-eap70-openshift:latest"
             // create build. override the exit code since it complains about exising imagestream
             sh "oc new-build --name=shopping --image-stream=jboss-eap70-openshift:latest --binary=true --labels=app=shopping -n stage || true"
             // build image
