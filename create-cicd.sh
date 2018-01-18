@@ -10,6 +10,7 @@ oc new-project prod --display-name="Shopping - Prod"
 
 oc login -u system:admin
 oc policy add-role-to-user admin system:serviceaccount:cicd:default
+oc tag openshift/jboss-eap70-openshift:1.6 openshift/jboss-eap70-openshift:latest
 oc adm policy add-role-to-user cluster-admin developer
 oc adm policy add-role-to-user admin developer -n cicd
 oc adm policy add-role-to-user admin developer -n stage
