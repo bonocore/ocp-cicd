@@ -1,4 +1,5 @@
 #!/bin/bash
+OCP_VERSION="v3.6";
 
 # create project
 oc login -u developer
@@ -6,9 +7,16 @@ oc new-project cicd --display-name="CI/CD"
 oc new-project stage --display-name="Shopping - Stage"
 oc new-project prod --display-name="Shopping - Prod"
 
-# permissions 
+# import xpaas images and fix permissions 
 
 oc login -u system:admin
+git clone https://github.com/openshift/openshift-ansible 
+cd openshift-ansible/roles/openshift_examples/files/examples/$OCP_VERSION/
+cd xpaas-streams
+for json in `ls -1 *.json`; do oc create -n openshift -f $json; done
+cd ../xpaas-templates
+for json in `ls -1`; do oc create -n openshift -f $json; done
+
 oc policy add-role-to-user admin system:serviceaccount:cicd:default
 oc tag openshift/jboss-eap70-openshift:1.6 openshift/jboss-eap70-openshift:latest
 oc adm policy add-role-to-user cluster-admin developer
