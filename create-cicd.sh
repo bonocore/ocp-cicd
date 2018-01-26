@@ -35,7 +35,7 @@ oc new-app nexus2-persistent -n cicd
 # Stage Project creation steps
 oc policy add-role-to-user edit system:serviceaccount:cicd:jenkins -n stage
 
-G# Prod Project creation steps
+# Prod Project creation steps
 
 oc policy add-role-to-user edit system:serviceaccount:cicd:jenkins -n prod
 oc create -f ./shopping-bluegreen.yaml  -n prod
