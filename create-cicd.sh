@@ -1,6 +1,6 @@
 #!/bin/bash
 OCP_VERSION="v3.6";
-
+LOCALPATH=$PWD
 # create project
 oc login -u developer
 oc new-project cicd --display-name="CI/CD"
@@ -16,6 +16,7 @@ cd xpaas-streams
 for json in `ls -1 *.json`; do oc create -n openshift -f $json; done
 cd ../xpaas-templates
 for json in `ls -1`; do oc create -n openshift -f $json; done
+cd $LOCALPATH
 
 oc policy add-role-to-user admin system:serviceaccount:cicd:default
 oc tag openshift/jboss-eap70-openshift:1.6 openshift/jboss-eap70-openshift:latest
@@ -26,7 +27,8 @@ oc adm policy add-role-to-user admin developer -n prod
 
 # CI/CD creation steps
 oc login -u developer
-oc new-app -f http://bit.ly/openshift-gogs-persistent-template --param=HOSTNAME=gogs-cicd.cloud.redhat.int -n cicd
+#oc new-app -f http://bit.ly/openshift-gogs-persistent-template --param=HOSTNAME=gogs-cicd.cloud.redhat.int -n cicd
+oc new-app -f ./gogs-persistent-template.yaml -n cicd
 oc new-app jenkins-ephemeral -l app=jenkins -p MEMORY_LIMIT=1Gi -n cicd
 oc create -f ./pipelines.yaml  -n cicd
 oc create -f  https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus2-persistent-template.yaml -n cicd
@@ -62,6 +64,6 @@ done
 # we might catch the router before it's been updated, so wait just a touch more
 sleep 10
 
-curl -sL --post302 -w "%{http_code}"  http://gogs-cicd.cloud.redhat.int/user/sign_up -d user_name=gogs -d email=admin@gogs.com -d password=password -d retype=password
-
-curl -sL -w "%{http_code}" -H "Content-Type: application/json" -u gogs:password -X POST http://gogs-cicd.cloud.redhat.int/api/v1/repos/migrate -d @./clone_repo.json
+GOGSROUTE='oc get route gogs -n cicd -o=custom-columns=HOST:.spec.host | grep -v "HOST"'
+curl -sL --post302 -w "%{http_code}"  $GOGSROUTE -d user_name=gogs -d email=admin@gogs.com -d password=password -d retype=password
+curl -sL -w "%{http_code}" -H "Content-Type: application/json" -u gogs:password -X POST http://$GOGSROUTE/api/v1/repos/migrate -d @./clone_repo.json
