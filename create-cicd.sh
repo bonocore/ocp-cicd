@@ -64,7 +64,7 @@ done
 # we might catch the router before it's been updated, so wait just a touch more
 sleep 10
 oc login -u system:admin
-GOGSROUTE='oc get route gogs -n cicd -o=custom-columns=HOST:.spec.host | grep -v "HOST"'
+GOGSROUTE=$(oc get route gogs -n cicd -o=custom-columns=HOST:.spec.host | grep -v "HOST")
 oc login -u developer
 oc project cicd
 curl -sL --post302 -w "%{http_code}"  $GOGSROUTE -d user_name=gogs -d email=admin@gogs.com -d password=password -d retype=password
