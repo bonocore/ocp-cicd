@@ -67,5 +67,5 @@ oc login -u system:admin
 GOGSROUTE=$(oc get route gogs -n cicd -o=custom-columns=HOST:.spec.host | grep -v "HOST")
 oc login -u developer
 oc project cicd
-curl -sL --post302 -w "%{http_code}"  $GOGSROUTE -d user_name=gogs -d email=admin@gogs.com -d password=password -d retype=password
+curl -sL --post302 -w "%{http_code}"  $GOGSROUTE/user/sign_up -d user_name=gogs -d email=admin@gogs.com -d password=password -d retype=password
 curl -sL -w "%{http_code}" -H "Content-Type: application/json" -u gogs:password -X POST http://$GOGSROUTE/api/v1/repos/migrate -d @./clone_repo.json
