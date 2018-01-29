@@ -3,7 +3,12 @@
 
 1) edit OCP_VERSION="v3.6"; on create-cicd.sh in order to install correct xpaas images from https://github.com/openshift/openshift-ansible
 
-2) execute create-cicd.sh
+2) create a developer user
+   e.g 
+   
+   htpasswd -b /etc/origin/master/htpasswd developer YOURPASSWORD
+   
+3) execute create-cicd.sh
 
 
 NOTE
