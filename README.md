@@ -6,4 +6,13 @@
 2) execute create-cicd.sh
 
 
+NOTE
+
+fixed user permission for OCP 3.6/3.7 
+reference local file for jenkins/nexus templates
+implemented import of xpaas images with latest tag for EAP
+implemented default route subdomain for gogs avoiding manual change to hosts file
+
+
+
 
