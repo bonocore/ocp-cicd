@@ -1,15 +1,42 @@
 #!/bin/bash
-
+OCP_VERSION="v3.7";
+LOCALPATH=$PWD
 # create project
 oc login -u developer
 oc new-project cicd --display-name="CI/CD"
 oc new-project stage --display-name="Shopping - Stage"
 oc new-project prod --display-name="Shopping - Prod"
 
-# permissions 
+## import xpaas images for oc cluster up
+#oc login -u system:admin
+#git clone https://github.com/openshift/openshift-ansible 
+#cd openshift-ansible/roles/openshift_examples/files/examples/$OCP_VERSION/
+#cd xpaas-streams
+#for json in `ls -1 *.json`; do oc create -n openshift  -f $json; done
+#cd ../xpaas-templates
+#for json in `ls -1`; do oc create -n openshift -f $json; done
+#cd $LOCALPATH
 
+# import xpaas images for traditional setup
 oc login -u system:admin
+IMAGESTREAMDIR="/usr/share/ansible/openshift-ansible/roles/openshift_examples/files/examples/$OCP_VERSION/image-streams"; \
+XPAASSTREAMDIR="/usr/share/ansible/openshift-ansible/roles/openshift_examples/files/examples/$OCP_VERSION/xpaas-streams"; \
+XPAASTEMPLATES="/usr/share/ansible/openshift-ansible/roles/openshift_examples/files/examples/$OCP_VERSION/xpaas-templates"; \
+DBTEMPLATES="/usr/share/ansible/openshift-ansible/roles/openshift_examples/files/examples/$OCP_VERSION/db-templates"; \
+QSTEMPLATES="/usr/share/ansible/openshift-ansible/roles/openshift_examples/files/examples/$OCP_VERSION/quickstart-templates"
+oc create -f $IMAGESTREAMDIR/image-streams-rhel7.json -n openshift
+oc create -f $XPAASSTREAMDIR/jboss-image-streams.json -n openshift
+oc create -f $DBTEMPLATES -n openshift
+oc create -f $QSTEMPLATES -n openshift
+oc create -f $XPAASTEMPLATES -n openshift
+sleep 45
+
+cd $LOCALPATH
+
+# fixing user permission
 oc policy add-role-to-user admin system:serviceaccount:cicd:default
+oc adm policy add-role-to-user cluster-admin developer
+oc tag openshift/jboss-eap70-openshift:1.6 openshift/jboss-eap70-openshift:latest
 oc adm policy add-role-to-user cluster-admin developer
 oc adm policy add-role-to-user admin developer -n cicd
 oc adm policy add-role-to-user admin developer -n stage
@@ -17,10 +44,12 @@ oc adm policy add-role-to-user admin developer -n prod
 
 # CI/CD creation steps
 oc login -u developer
-oc new-app -f http://bit.ly/openshift-gogs-persistent-template --param=HOSTNAME=gogs-cicd.cloud.redhat.int -n cicd
+#oc new-app -f http://bit.ly/openshift-gogs-persistent-template --param=HOSTNAME=gogs-cicd.cloud.redhat.int -n cicd
+oc new-app -f ./gogs-persistent-template.yaml -n cicd
 oc new-app jenkins-ephemeral -l app=jenkins -p MEMORY_LIMIT=1Gi -n cicd
 oc create -f ./pipelines.yaml  -n cicd
-oc create -f  https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus2-persistent-template.yaml -n cicd
+#oc create -f  https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus2-persistent-template.yaml -n cicd
+oc create -f  ./nexus2-persistent-template.yaml -n cicd 
 oc new-app nexus2-persistent -n cicd
 
 # Stage Project creation steps
@@ -52,7 +81,9 @@ done
 
 # we might catch the router before it's been updated, so wait just a touch more
 sleep 10
-
-curl -sL --post302 -w "%{http_code}"  http://gogs-cicd.cloud.redhat.int/user/sign_up -d user_name=gogs -d email=admin@gogs.com -d password=password -d retype=password
-
-curl -sL -w "%{http_code}" -H "Content-Type: application/json" -u gogs:password -X POST http://gogs-cicd.cloud.redhat.int/api/v1/repos/migrate -d @./clone_repo.json
+oc login -u system:admin
+GOGSROUTE=$(oc get route gogs -n cicd -o=custom-columns=HOST:.spec.host | grep -v "HOST")
+oc login -u developer
+oc project cicd
+curl -sL --post302 -w "%{http_code}"  $GOGSROUTE/user/sign_up -d user_name=gogs -d email=admin@gogs.com -d password=password -d retype=password
+curl -sL -w "%{http_code}" -H "Content-Type: application/json" -u gogs:password -X POST http://$GOGSROUTE/api/v1/repos/migrate -d @./clone_repo.json

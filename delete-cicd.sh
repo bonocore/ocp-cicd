@@ -15,3 +15,8 @@ oc delete cm/gogs-config
 oc project prod
 oc delete is/shopping
 oc delete template shopping-bluegreen -n prod
+
+# delete project
+oc login -u system:admin
+oc delete project stage prod cicd
+
