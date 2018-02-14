@@ -10,75 +10,76 @@ spec:
     jenkinsPipelineStrategy:
       jenkinsfile: |-
          node('maven') {
-            // define commands
-            def mvnCmd = "mvn -s configuration/cicd-settings.xml"
+   // define commands
+   def mvnCmd = "mvn -s configuration/cicd-settings-nexus3.xml"
 
-            stage 'Build'
-            git url: 'http://gogs:3000/gogs/openshift-shopping.git'
-            sh "${mvnCmd} clean install -DskipTests=true"
+   stage 'Build'
+   git url: 'http://gogs:3000/gogs/openshift-shopping.git'
+   sh "${mvnCmd} clean install -DskipTests=true"
 
-            stage 'Test and Analysis'
-            parallel (
-                'Test': {
-                    sh "${mvnCmd} test"
-                    step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-                },
-                'Static Analysis': {
-                    try {
+   stage 'Test and Analysis'
+   parallel (
+       'Test': {
+           sh "${mvnCmd} test"
+           step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+       },
+       'Static Analysis': {
+         try {
                         sh "${mvnCmd} jacoco:report sonar:sonar -Dsonar.host.url=http://sonarqube:9000 -DskipTests=true"
                             } catch ( e ) {
                             "Error encountered: ${e}"
                             }
-                }
-            )
 
-            stage 'Push to Nexus'
-            sh "${mvnCmd} deploy -DskipTests=true"
+       }
+   )
 
-            stage 'Deploy stage'
-            sh "rm -rf oc-build && mkdir -p oc-build/deployments"
-            sh "cp target/openshift-shopping.war oc-build/deployments/ROOT.war"
-            // clean up. keep the image stream
-            sh "oc project stage"
-            sh "oc delete bc,dc,svc,route -l app=shopping -n stage"
-            // create build. override the exit code since it complains about exising imagestream
-            sh "oc new-build --name=shopping --image-stream=jboss-eap70-openshift:latest --binary=true --labels=app=shopping -n stage || true"
-            // build image
-            sh "oc start-build shopping --from-dir=oc-build --wait=true -n stage"
-            // deploy image
-            sh "oc new-app shopping:latest -n stage"
-            sh "oc expose svc/shopping -n stage"
+   stage 'Push to Nexus'
+   sh "${mvnCmd} deploy -DskipTests=true"
 
-            input message: "Promote to prod? (not live)", ok: "Promote"
-            stage 'Promote to prod'
-            activeService = sh (
-                script: "oc get route shopping -n prod -o jsonpath='{ .metadata.labels.variant }'",
-                returnStdout: true
-                ).trim()
+   stage 'Deploy stage'
+   sh "rm -rf oc-build && mkdir -p oc-build/deployments"
+   sh "cp target/openshift-shopping.war oc-build/deployments/ROOT.war"
+   // clean up. keep the image stream
+   sh "oc project stage"
+   sh "oc delete bc,dc,svc,route -l app=shopping -n stage"
+   // create build. override the exit code since it complains about exising imagestream
+   sh "oc new-build --name=shopping --image-stream=jboss-eap70-openshift:latest --binary=true --labels=app=shopping -n stage || true"
+   // build image
+   sh "oc start-build shopping --from-dir=oc-build --wait=true -n stage"
+   // deploy image
+   sh "oc new-app shopping:latest -n stage"
+   sh "oc expose svc/shopping -n stage"
 
-                //I suppose we have green in prod
-                def toBeProdTag="blue"
-                def currentProd="green"
+   input message: "Promote to prod? (not live)", ok: "Promote"
+   stage 'Promote to prod'
+   activeService = sh (
+       script: "oc get route shopping -n prod -o jsonpath='{ .metadata.labels.variant }'",
+       returnStdout: true
+       ).trim()
 
-                if (activeService == "blue")
-                {
-                    //if we have blue in prod, I switch the labels
-                    toBeProdTag="green"
-                    currentProd="blue"
-                }
-                sh "oc tag stage/shopping:latest prod/shopping:prod-${toBeProdTag}"
+       //I suppose we have green in prod
+       def toBeProdTag="blue"
+       def currentProd="green"
 
-                        input message: "Go Live? (switch traffic)", ok: "GoLive"
-                        stage 'Go Live'
-                        sh "oc set route-backends shopping shopping-${toBeProdTag}=100 shopping-${currentProd}=0 -n prod"
-                        sh "oc label route shopping variant=${toBeProdTag} --overwrite -n prod"
+       if (activeService == "blue")
+       {
+           //if we have blue in prod, I switch the labels
+           toBeProdTag="green"
+           currentProd="blue"
+       }
+       sh "oc tag stage/shopping:latest prod/shopping:prod-${toBeProdTag}"
 
-                    }
+               input message: "Go Live? (switch traffic)", ok: "GoLive"
+               stage 'Go Live'
+               sh "oc set route-backends shopping shopping-${toBeProdTag}=100 shopping-${currentProd}=0 -n prod"
+               sh "oc label route shopping variant=${toBeProdTag} --overwrite -n prod"
 
-                    def version() {
-                        def matcher = readFile('pom.xml') =~ '<version>(.+)</version>'
-                        matcher ? matcher[0][1] : null
-                    }
+           }
+
+           def version() {
+               def matcher = readFile('pom.xml') =~ '<version>(.+)</version>'
+               matcher ? matcher[0][1] : null
+           }
     type: JenkinsPipeline
     type: Generic
 status:

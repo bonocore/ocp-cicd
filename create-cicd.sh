@@ -9,7 +9,7 @@ oc new-project prod --display-name="Shopping - Prod"
 
 ## import xpaas images for oc cluster up
 #oc login -u system:admin
-#git clone https://github.com/openshift/openshift-ansible 
+#git clone https://github.com/openshift/openshift-ansible
 #cd openshift-ansible/roles/openshift_examples/files/examples/$OCP_VERSION/
 #cd xpaas-streams
 #for json in `ls -1 *.json`; do oc create -n openshift  -f $json; done
@@ -48,9 +48,7 @@ oc login -u developer
 oc new-app -f ./gogs-persistent-template.yaml -n cicd
 oc new-app jenkins-ephemeral -l app=jenkins -p MEMORY_LIMIT=1Gi -n cicd
 oc create -f ./pipelines.yaml  -n cicd
-#oc create -f  https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus2-persistent-template.yaml -n cicd
-oc create -f  ./nexus2-persistent-template.yaml -n cicd 
-oc new-app nexus2-persistent -n cicd
+oc new-app -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus3-persistent-template.yaml --param=NEXUS_VERSION=3.6.1 --param=MAX_MEMORY=2Gi
 
 # Stage Project creation steps
 oc policy add-role-to-user edit system:serviceaccount:cicd:jenkins -n stage
