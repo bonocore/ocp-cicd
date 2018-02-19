@@ -60,7 +60,7 @@ oc create -f ./shopping-bluegreen.yaml  -n prod
 oc new-app shopping-bluegreen -l app=shopping -n prod
 
 #Optional
-oc new-app docker.io/openshiftdemos/sonarqube:6.0 -e SONARQUBE_JDBC_USERNAME=sonar,SONARQUBE_JDBC_PASSWORD=sonar,SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar -n cicd
+oc new-app docker.io/openshiftdemos/sonarqube:6.0 -n cicd
 oc expose service sonarqube -n cicd
 
 # now we wait for gogs to be ready
