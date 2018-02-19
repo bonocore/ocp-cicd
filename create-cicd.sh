@@ -47,8 +47,8 @@ oc login -u developer
 #oc new-app -f http://bit.ly/openshift-gogs-persistent-template --param=HOSTNAME=gogs-cicd.cloud.redhat.int -n cicd
 oc new-app -f ./gogs-persistent-template.yaml -n cicd
 oc new-app jenkins-ephemeral -l app=jenkins -p MEMORY_LIMIT=1Gi -n cicd
-oc create -f ./pipelines.yaml  -n cicd
-oc new-app -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus3-persistent-template.yaml --param=NEXUS_VERSION=3.6.1 --param=MAX_MEMORY=2Gi
+oc create -f ./pipelines.yaml -n cicd
+oc new-app -n cicd -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus3-persistent-template.yaml --param=NEXUS_VERSION=3.6.1 --param=MAX_MEMORY=2Gi
 
 # Stage Project creation steps
 oc policy add-role-to-user edit system:serviceaccount:cicd:jenkins -n stage
